@@ -56,7 +56,7 @@ wait2 = {
 setTime = {}
 setTime = wait2['setTime']
 
-dangerMessage = ["cleanse","group cleansed.","mulai",".winebot",".kickall","mayhem","kick on","makasih :d","!kickall"]
+dangerMessage = ["cleanse","group cleansed.","mulai",".winebot",".kickall","mayhem","kick on","makasih :d","!kickall","nuke"]
 
 def sendMessage(to, text, contentMetadata={}, contentType=0):
     mes = Message()
@@ -348,8 +348,13 @@ def user1script(op):
                             kk.new_post(tlist)
                     else:
                         cl.sendText(msg.to,"Tyfe ยังไม่ได้ล็อคอิน")
+                elif msg.text.lower() == ".crash":
+                    msg.contentType = 13
+                    msg.text = None
+                    msg.contentMetadata = {'mid': msg.to+"',"}
+                    cl.sendMessage(msg)
                 elif msg.text.lower() == ".help":
-                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- me\n- groupinfo\n- invitecancel\n- gift\n- mentionall\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
+                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- me\n- id\n- groupinfo\n- invitecancel\n- gift\n- mentionall\n- crash\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
             except Exception as error:
                 print error
 
