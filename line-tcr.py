@@ -14,7 +14,7 @@ kk = LINETCR.LINE()
 TyfeLogged = False
 
 with open('tval.pkl') as f:
-    seeall,tadmin = pickle.load(f)
+    seeall,tadmin,banned = pickle.load(f)
 
 print "login success"
 reload(sys)
@@ -446,16 +446,17 @@ def run(src):
 lmimic = ""
 kickLockList = open("prevkick.dat","r").read().split('\n')
 
-tadmin = {
-    "u192b20ffe99430786818ecc7aa53ed88":["cdb7564fd64f7a62d8ceac1cc5bbe9a71"],
-    "u62f3dcacb34d699e30b327f087803f5c":["c9d7efb03ee3c0b5c45f80129a737ee63"]
-}
+groupParam = ""
+
+def kickBan(targ):
+    kk.kickoutFromGroup(groupParam,[targ])
 
 def user2script(op):
     global readAlert
     global kickLockList
     global banned
     global tadmin
+    global groupParam
     try:
         # if op.type not in [61,60,55,48,26]:
             # print str(op)
@@ -466,7 +467,7 @@ def user2script(op):
             if invitor == user1 and gotinvite == user2:
                 kk.acceptGroupInvitation(op.param1)
         if op.type == 17:
-            if op.param2 in banned:
+            if op.param1 in banned and op.param2 in banned[op.param1]:
                 kk.kickoutFromGroup(op.param1,[op.param2])
                 now2 = datetime.datetime.now()
                 nowT = datetime.datetime.strftime(now2,"%H")
@@ -545,10 +546,18 @@ def user2script(op):
                         x = kk.getGroup(msg.to)
                         kk.sendText(msg.to,"ชื่อ: "+cl.getContact(msg.from_).displayName+"\n\nคุณไม่มีสิทธิ์ใช้คำสั่งนี้ มีเพียงผู้เดียวเท่านั้นที่ได้รับอำนาจในการใช้คำสั่งนี้")
             elif "tyfe:post " in msg.text.lower():
-                red = re.compile(re.escape('tyfe:post '),re.IGNORECASE)
-                ttp = red.sub('',msg.text)
-                kk.new_post(str(ttp))
-                kk.sendText(msg.to,"โพสต์ข้อความแล้ว\nข้อความที่โพสต์: "+str(ttp))
+                if msg.from_ == user1:
+                    red = re.compile(re.escape('tyfe:post '),re.IGNORECASE)
+                    ttp = red.sub('',msg.text)
+                    kk.new_post(str(ttp))
+                    kk.sendText(msg.to,"โพสต์ข้อความแล้ว\nข้อความที่โพสต์: "+str(ttp))
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"ข้อผิดพลาด: คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() == "tyfe:weather:chiangmai":
                 if msg.toType != 0:
                     data_output(msg.to,data_organizer(data_fetch(url_builder(1153670))),1)
@@ -834,6 +843,177 @@ def user2script(op):
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
                         kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif "tyfe:ban " in msg.text.lower():
+                if msg.from_ in user1:
+                    if msg.toType == 2:
+                        red = re.compile(re.escape('tyfe:ban '),re.IGNORECASE)
+                        namel = red.sub('',msg.text)
+                        namel = namel.lstrip()
+                        print namel
+                        namel = namel.replace(" @","$spliter$")
+                        print namel
+                        namel = namel.replace("@","")
+                        print namel
+                        namel = namel.rstrip()
+                        namel = namel.split("$spliter$")
+                        print namel
+                        gmem = cl.getGroup(msg.to).members
+                        found = False
+                        tmpl = []
+                        if msg.to in banned:
+                            tmpl = banned[msg.to]
+                        banned[msg.to] = []
+                        for targ in gmem:
+                            if targ.displayName in namel:
+                                found = True
+                                if targ.mid not in tmpl and targ.mid not in [user1,user2]:
+                                    banned[msg.to].append(targ.mid)
+                        if tmpl != []:
+                            for oldtarg in tmpl:
+                                banned[msg.to].append(oldtarg)
+                        if found == False:
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"ไม่พบรายชื่อ (｀・ω・´)"+tm)
+                        else:
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"สำเร็จแล้ว (｀・ω・´)"+tm)
+                else:
+                    if msg.toType != 0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif "tyfe:unban " in msg.text.lower():
+                if msg.from_ in user1:
+                    if msg.toType == 2:
+                        red = re.compile(re.escape('tyfe:unban '),re.IGNORECASE)
+                        namel = red.sub('',msg.text)
+                        namel = namel.lstrip()
+                        namel = namel.replace("@","")
+                        namel = namel.rstrip()
+                        namel = namel.split(" ")
+                        gmem = cl.getGroup(msg.to).members
+                        found = False
+                        if msg.to in banned:
+                            for targ in gmem:
+                                if targ.displayName in namel:
+                                    found = True
+                                    if targ.mid in banned[msg.to]:
+                                        banned[msg.to].remove(targ.mid)
+                        if found == False:
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"ไม่พบรายชื่อ (｀・ω・´)"+tm)
+                        else:
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"สำเร็จแล้ว (｀・ω・´)"+tm)
+                else:
+                    if msg.toType != 0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:unbanall":
+                if msg.from_ == user1:
+                    try:
+                        banned.pop(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ปลดแบนสมาชิกทั้งหมดสำหรับกลุ่มนี้เรียบร้อยแล้ว (｀・ω・´)"+tm)
+                    except:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ไม่มีสมาชิกถูกแบนสำหรับกลุ่มนี้ (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:banlist":
+                if msg.from_ == user1:
+                    if msg.to in banned and banned[msg.to] != []:
+                        kk.sendText(msg.to,"กำลังดึงข้อมูลบัญชี กรุณารอสักครู่")
+                        text = "รายชื่อบัญชีที่ถูกแบนสำหรับกลุ่มนี้:\n"
+                        for targ in banned[msg.to]:
+                            text = text + "- " + cl.getContact(targ).displayName + "\n"
+                        text = text[:-1]
+                        kk.sendText(msg.to,text)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ไม่มีสมาชิกถูกแบนสำหรับกลุ่มนี้ (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:kickban":
+                if msg.from_ == user1:
+                    if msg.to in banned and banned[msg.to] != []:
+                        gmem = kk.getGroup(msg.to).members
+                        groupParam = msg.to
+                        targets = []
+                        for targ in gmem:
+                            if targ.mid in banned[msg.to]:
+                                targets.append(targ.mid)
+                        p = Pool(len(targets))
+                        try:
+                            p.map(kickBan,targets)
+                        except:
+                            pass
+                        p.close()
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"สำเร็จแล้ว (｀・ω・´)"+tm)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ไม่มีสมาชิกถูกแบนสำหรับกลุ่มนี้ (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() in dangerMessage:
                 try:
                     if msg.toType == 2:
@@ -1007,5 +1187,5 @@ try:
                     user2script(Op)
 except:
     with open('tval.pkl', 'w') as f:
-        pickle.dump([seeall,tadmin], f)
+        pickle.dump([seeall,tadmin,banned], f)
     print ""
