@@ -14,7 +14,7 @@ kk = LINETCR.LINE()
 TyfeLogged = False
 
 with open('tval.pkl') as f:
-    seeall,tadmin,banned = pickle.load(f)
+    seeall,tadmin,banned,kickLockList = pickle.load(f)
 
 print "login success"
 reload(sys)
@@ -172,7 +172,7 @@ def user1script(op):
         if op.type == 13:
             invitor = op.param2
             gotinvite = op.param3
-            if invitor == user2 and gotinvite == user1:
+            if invitor == user2 and user1 == gotinvite:
                 cl.acceptGroupInvitation(op.param1)
         if op.type == 19 and TyfeLogged == True:
             gotkick = op.param3
@@ -261,6 +261,9 @@ def user1script(op):
                         else:
                             u = "เปิด"
                         cl.sendText(msg.to,"ชื่อกลุ่ม: " + str(ginfo.name) + "\n\nผู้สร้าง: " + gCreator + "\nรหัสกลุ่ม (gid): " + msg.to + "\nรูปกลุ่ม:\nhttp://dl.profile.line.naver.jp/" + ginfo.pictureStatus + "\n\nสมาชิก: " + str(len(ginfo.members)) + " ท่าน\nค้างเชิญ: " + sinvitee + " ท่าน\nURL: " + u)
+                elif msg.text == ".Speed":
+                    cl.sendText(msg.to,"กำลังทดสอบ..")
+                    cl.sendText(msg.to,"0.000000007112 วินาที")
                 elif msg.text.lower() == ".speed":
                     start = time.time()
                     cl.sendText(msg.to,"กำลังทดสอบ..")
@@ -444,12 +447,14 @@ def run(src):
     return "".join(rv)
 
 lmimic = ""
-kickLockList = open("prevkick.dat","r").read().split('\n')
 
 groupParam = ""
 
 def kickBan(targ):
     kk.kickoutFromGroup(groupParam,[targ])
+
+waitForContactBan = False
+waitForContactUnBan = False
 
 def user2script(op):
     global readAlert
@@ -457,8 +462,10 @@ def user2script(op):
     global banned
     global tadmin
     global groupParam
+    global waitForContactBan
+    global waitForContactUnBan
     try:
-        # if op.type not in [61,60,55,48,26]:
+        # if op.type not in [61,60,55,48,25]:
             # print str(op)
             # print "\n\n"
         if op.type == 13:
@@ -520,7 +527,40 @@ def user2script(op):
                 kk.sendText(user1,msg.to)
         if op.type == 26:
             msg = op.message
-            if "tyfe:say " in msg.text.lower():
+            if msg.contentType == 13:
+                if msg.from_ == user1:
+                    if msg.toType == 2:
+                        if waitForContactBan == True:
+                            contmid = msg.contentMetadata['mid']
+                            tmpl = []
+                            if msg.to in banned:
+                                tmpl = banned[msg.to]
+                            banned[msg.to] = []
+                            if contmid not in tmpl and contmid not in [user1,user2]:
+                                banned[msg.to].append(contmid)
+                            if tmpl != []:
+                                for oldtarg in tmpl:
+                                    banned[msg.to].append(oldtarg)
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"สำเร็จแล้ว (｀・ω・´)"+tm)
+                            waitForContactBan = False
+                        if waitForContactUnBan == True:
+                            contmid = msg.contentMetadata['mid']
+                            if msg.to in banned:
+                                if contmid in banned[msg.to]:
+                                    banned[msg.to].remove(contmid)
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"สำเร็จแล้ว (｀・ω・´)"+tm)
+                            waitForContactUnBan = False
+            elif "tyfe:say " in msg.text.lower():
                 if msg.from_ == user1:
                     red = re.compile(re.escape('tyfe:say '),re.IGNORECASE)
                     mts = red.sub('',msg.text)
@@ -753,26 +793,14 @@ def user2script(op):
                     kk.sendText(msg.to,"ข้อผิดพลาด: คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() == "tyfe:preventkick:on":
                 if msg.from_ == user1:
-                    f = open("prevkick.dat","r+")
-                    if msg.to not in f.read().split('\n'):
-                        f.write(msg.to+"\n")
-                        kickLockList = open("prevkick.dat","r").read().split('\n')
-                        f.close()
+                    if msg.to not in kickLockList:
+                        kickLockList.append(msg.to)
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
                         nowM = datetime.datetime.strftime(now2,"%M")
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
                         kk.sendText(msg.to,"เปิดโหมดห้ามลบแล้ว (｀・ω・´)"+tm)
-                        f = open("prevkick.dat","r")
-                        lines = f.read().split('\n')
-                        f.close
-                        f = open("prevkick.dat","w")
-                        for line in lines:
-                            if line != "":
-                                f.write(line+"\n")
-                        f.close()
-                        kickLockList = open("prevkick.dat","r").read().split('\n')
                     else:
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
@@ -780,7 +808,6 @@ def user2script(op):
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
                         kk.sendText(msg.to,"โหมดห้ามลบถูกเปิดอยู่แล้ว (｀・ω・´)"+tm)
-                        f.close()
                 else:
                     now2 = datetime.datetime.now()
                     nowT = datetime.datetime.strftime(now2,"%H")
@@ -790,14 +817,8 @@ def user2script(op):
                     kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() == "tyfe:preventkick:off":
                 if msg.from_ == user1:
-                    f = open("prevkick.dat","r")
-                    lines = f.read().split('\n')
-                    f.close
-                    f = open("prevkick.dat","w")
-                    if msg.to in lines:
-                        for line in lines:
-                            if line not in [msg.to,"\n"]:
-                                f.write(line+"\n")
+                    if msg.to in kickLockList:
+                        kickLockList.remove(msg.to)
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
                         nowM = datetime.datetime.strftime(now2,"%M")
@@ -811,8 +832,6 @@ def user2script(op):
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
                         kk.sendText(msg.to,"โหมดห้ามลบถูกปิดอยู่แล้ว (｀・ω・´)"+tm)
-                    f.close()
-                    kickLockList = open("prevkick.dat","r").read().split('\n')
                 else:
                     now2 = datetime.datetime.now()
                     nowT = datetime.datetime.strftime(now2,"%H")
@@ -824,6 +843,13 @@ def user2script(op):
                 if msg.from_ == user1:
                     if msg.toType != 0:
                         kk.leaveGroup(msg.to)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() == "tyfe:setreadpoint":
                 if msg.from_ == user1 or msg.from_ in tadmin and msg.to in tadmin[msg.from_]:
                     if msg.toType != 0:
@@ -835,6 +861,44 @@ def user2script(op):
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
                         kk.sendText(msg.from_,"กรุณาใช้คำสั่งในกลุ่ม (｀・ω・´)"+tm)
+                else:
+                    if msg.toType != 0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() in ["tyfe:ban","tyfe:ban "]:
+                if msg.from_ == user1:
+                    if msg.toType == 2:
+                        waitForContactBan = True
+                        waitForContactUnBan = False
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ส่งคอนแทกเพื่อทำการแบน (｀・ω・´)"+tm)
+                else:
+                    if msg.toType != 0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() in ["tyfe:unban","tyfe:unban "]:
+                if msg.from_ == user1:
+                    if msg.toType == 2:
+                        waitForContactUnBan = True
+                        waitForContactBan = False
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ส่งคอนแทกเพื่อทำการปลดแบน (｀・ω・´)"+tm)
                 else:
                     if msg.toType != 0:
                         now2 = datetime.datetime.now()
@@ -1187,5 +1251,5 @@ try:
                     user2script(Op)
 except:
     with open('tval.pkl', 'w') as f:
-        pickle.dump([seeall,tadmin,banned], f)
+        pickle.dump([seeall,tadmin,banned,kickLockList], f)
     print ""
