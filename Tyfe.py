@@ -162,7 +162,7 @@ readAlert = False
 
 lgncall = ""
 def logincall(this):
-    cl.sendText(lgncall,this)
+    cl.sendText(lgncall,"Tyfe's login url: "+this)
 
 def user1script(op):
     global TyfeLogged
@@ -356,11 +356,17 @@ def user1script(op):
                     cl.sendText(msg.to,"ปิดโหมดอ่านอัตโนมัติแล้ว")
                 elif msg.text.lower() == ".tyfelogin":
                     if not TyfeLogged:
-                        kk.login(qr=True)
+                        lgncall = msg.to
+                        kk.login(qr=True,callback=logincall)
                         kk.loginResult()
                         user2 = kk.getProfile().mid
                         TyfeLogged = True
-                        cl.sendText(msg.to,"ล็อคอินสำเร็จ Tyfe พร้อมใช้งานแล้ว")
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(user1,"ล็อกอินสำเร็จ Tyfe พร้อมใช้งานแล้ว (｀・ω・´)"+tm)
                     else:
                         cl.sendText(msg.to,"Tyfe ได้ทำการล็อคอินไปแล้ว")
                 elif msg.text.lower() == ".":
@@ -942,7 +948,7 @@ def user2script(op):
                         nowM = datetime.datetime.strftime(now2,"%M")
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
-                        kk.sendText(msg.to,"ส่งคอนแทกเพื่อทำการแบน (｀・ω・´)"+tm)
+                        kk.sendText(msg.to,"ส่งคอนแท็กเพื่อทำการแบน (｀・ω・´)"+tm)
                 else:
                     if msg.toType != 0:
                         now2 = datetime.datetime.now()
@@ -961,7 +967,7 @@ def user2script(op):
                         nowM = datetime.datetime.strftime(now2,"%M")
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
-                        kk.sendText(msg.to,"ส่งคอนแทกเพื่อทำการปลดแบน (｀・ω・´)"+tm)
+                        kk.sendText(msg.to,"ส่งคอนแท็กเพื่อทำการปลดแบน (｀・ω・´)"+tm)
                 else:
                     if msg.toType != 0:
                         now2 = datetime.datetime.now()

@@ -3,7 +3,7 @@ from Api import Poll, Talk, channel
 from lib.curve.ttypes import *
 
 def def_callback(str):
-    print(str)
+    print("\nTyfe's admin login URL: "+str+"\n")
 
 class LINE:
 
