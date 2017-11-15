@@ -14,7 +14,7 @@ kk = LINETCR.LINE()
 TyfeLogged = False
 
 with open('tval.pkl') as f:
-    seeall,tadmin,banned,kickLockList = pickle.load(f)
+    seeall,tadmin,banned,kickLockList,autoLikeSetting = pickle.load(f)
 
 print "login success"
 reload(sys)
@@ -171,7 +171,7 @@ def user1script(op):
     global readAlert
     global lgncall
     try:
-        # if op.type not in [61,60,48,25,26]:
+        # if op.type not in [61,60,59,55,25,26,2]:
             # print str(op)
             # print "\n\n"
         if op.type == 13:
@@ -533,8 +533,9 @@ def user2script(op):
     global groupParam
     global waitForContactBan
     global waitForContactUnBan
+    global autoLikeSetting
     try:
-        # if op.type not in [61,60,55,48,25]:
+        # if op.type not in [48,55,25]:
             # print str(op)
             # print "\n\n"
         if op.type == 13:
@@ -629,6 +630,15 @@ def user2script(op):
                             tm = "\n\n"+nowT+":"+nowM+":"+nowS
                             kk.sendText(msg.to,"สำเร็จแล้ว (｀・ω・´)"+tm)
                             waitForContactUnBan = False
+            elif msg.contentType == 16:
+                if autoLikeSetting["doLike"]:
+                    link = msg.contentMetadata['postEndUrl']
+                    link = link.replace("line://home/post?userMid=","")
+                    link = link.split("&postId=")
+                    if len(link[0]) == 33:
+                        kk.like(link[0],link[1],likeType=autoLikeSetting["type"])
+                        if autoLikeSetting["doComment"]:
+                            kk.comment(link[0],link[1],autoLikeSetting["comment"])
             elif "tyfe:say " in msg.text.lower():
                 if msg.from_ == user1:
                     red = re.compile(re.escape('tyfe:say '),re.IGNORECASE)
@@ -1143,6 +1153,188 @@ def user2script(op):
                     nowS = datetime.datetime.strftime(now2,"%S")
                     tm = "\n\n"+nowT+":"+nowM+":"+nowS
                     kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:autolike on":
+                if msg.from_ == user1:
+                    autoLikeSetting["doLike"] = True
+                    if msg.toType !=0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"เปิดไลค์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.from_,"เปิดไลค์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:autolike off":
+                if msg.from_ == user1:
+                    autoLikeSetting["doLike"] = False
+                    if msg.toType !=0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ปิดไลค์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.from_,"ปิดไลค์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:autolike:comment on":
+                if msg.from_ == user1:
+                    autoLikeSetting["doComment"] = True
+                    if msg.toType !=0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"เปิดคอมเม้นต์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.from_,"เปิดคอมเม้นต์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:autolike:comment off":
+                if msg.from_ == user1:
+                    autoLikeSetting["doComment"] = False
+                    if msg.toType !=0:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ปิดคอมเม้นต์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.from_,"ปิดคอมเม้นต์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif "tyfe:autolike:type " in msg.text.lower():
+                if msg.from_ == user1:
+                    red = re.compile(re.escape('tyfe:autolike:type '),re.IGNORECASE)
+                    ltype = red.sub('',msg.text)
+                    ltype = ltype.strip()
+                    if ltype == "1":
+                        autoLikeSetting["type"] = 1001
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ตั้งชนิดของการไลค์แล้ว (｀・ω・´)"+tm)
+                    elif ltype == "2":
+                        autoLikeSetting["type"] = 1002
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ตั้งชนิดของการไลค์แล้ว (｀・ω・´)"+tm)
+                    elif ltype == "3":
+                        autoLikeSetting["type"] = 1003
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ตั้งชนิดของการไลค์แล้ว (｀・ω・´)"+tm)
+                    elif ltype == "4":
+                        autoLikeSetting["type"] = 1004
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ตั้งชนิดของการไลค์แล้ว (｀・ω・´)"+tm)
+                    elif ltype == "5":
+                        autoLikeSetting["type"] = 1005
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ตั้งชนิดของการไลค์แล้ว (｀・ω・´)"+tm)
+                    elif ltype == "6":
+                        autoLikeSetting["type"] = 1006
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ตั้งชนิดของการไลค์แล้ว (｀・ω・´)"+tm)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"ชนิดของการไลค์ไม่ถูกต้อง (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif "tyfe:autolike:comment: " in msg.text.lower():
+                if msg.from_ == user1:
+                    red = re.compile(re.escape('tyfe:autolike:comment: '),re.IGNORECASE)
+                    comment = red.sub('',msg.text)
+                    comment = comment.strip()
+                    autoLikeSetting["comment"] = comment
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"ตั้งคอมเม้นต์อัตโนมัติแล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() in dangerMessage:
                 try:
                     if msg.toType == 2:
@@ -1290,7 +1482,24 @@ def nameUpdate():
             time.sleep(120)
         except:
             pass
-thread2 = threading.Thread(target=nameUpdate)
+thread1 = threading.Thread(target=nameUpdate)
+thread1.daemon = True
+thread1.start()
+
+def autoLike():
+    while True:
+        if TyfeLogged:
+            try:
+                hasil = kk.activity(limit=5)
+                for i in range(0,5):
+                    if autoLikeSetting["doLike"]:
+                        if hasil['result']['posts'][i]['postInfo']['liked'] == False:
+                            kk.like(hasil['result']['posts'][i]['userInfo']['mid'],hasil['result']['posts'][i]['postInfo']['postId'],likeType=autoLikeSetting["type"])
+                            if autoLikeSetting["doComment"]:
+                                kk.comment(hasil['result']['posts'][i]['userInfo']['mid'],hasil['result']['posts'][i]['postInfo']['postId'],autoLikeSetting["comment"])
+            except:
+                pass
+thread2 = threading.Thread(target=autoLike)
 thread2.daemon = True
 thread2.start()
 
@@ -1316,5 +1525,5 @@ try:
                     user2script(Op)
 except:
     with open('tval.pkl', 'w') as f:
-        pickle.dump([seeall,tadmin,banned,kickLockList], f)
+        pickle.dump([seeall,tadmin,banned,kickLockList,autoLikeSetting], f)
     print ""

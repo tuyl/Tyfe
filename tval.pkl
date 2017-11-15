@@ -3,4 +3,18 @@
 a(dp2
 a(dp3
 a(lp4
-a.
+a(dp5
+S'doLike'
+p6
+I00
+sS'comment'
+p7
+S"Auto like from Tyfe's Operation."
+p8
+sS'type'
+p9
+I1001
+sS'doComment'
+p10
+I00
+sa.
