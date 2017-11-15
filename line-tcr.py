@@ -160,11 +160,16 @@ mimic = {
 
 readAlert = False
 
+lgncall = ""
+def logincall(this):
+    cl.sendText(lgncall,this)
+
 def user1script(op):
     global TyfeLogged
     global kk
     global user2
     global readAlert
+    global lgncall
     try:
         # if op.type not in [61,60,48,25,26]:
             # print str(op)
@@ -174,6 +179,13 @@ def user1script(op):
             gotinvite = op.param3
             if invitor == user2 and user1 == gotinvite:
                 cl.acceptGroupInvitation(op.param1)
+        if op.type == 17 and op.param2 == user2 and TyfeLogged:
+            now2 = datetime.datetime.now()
+            nowT = datetime.datetime.strftime(now2,"%H")
+            nowM = datetime.datetime.strftime(now2,"%M")
+            nowS = datetime.datetime.strftime(now2,"%S")
+            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+            kk.sendText(op.param1,"Tyfe พร้อมใช้งานแล้ว (｀・ω・´)"+tm)
         if op.type == 19 and TyfeLogged == True:
             gotkick = op.param3
             if gotkick == user1:
@@ -292,8 +304,27 @@ def user1script(op):
                         group = cl.getGroup(msg.to)
                         gMembMids = [contact.mid for contact in group.invitee]
                         cl.cancelGroupInvitation(msg.to,gMembMids)
-                elif msg.text.lower() == ".id":
-                    cl.sendText(msg.to,msg.to)
+                elif msg.text.lower() == ".gid":
+                    if msg.toType == 2:
+                        cl.sendText(msg.to,msg.to)
+                    else:
+                        cl.sendText(msg.to,"คำสั่งนี้ใช้ได้เฉพาะในกลุ่มเท่านั้น")
+                elif msg.text.lower() == ".uid":
+                    if msg.toType == 0:
+                        cl.sendText(msg.to,msg.to)
+                elif ".uid " in msg.text.lower():
+                    if msg.toType == 2:
+                        red = re.compile(re.escape('tyfe:ban '),re.IGNORECASE)
+                        namel = red.sub('',msg.text)
+                        namel = namel.lstrip()
+                        namel = namel.replace(" @","$spliter$")
+                        namel = namel.replace("@","")
+                        namel = namel.rstrip()
+                        namel = namel.split("$spliter$")
+                        gmem = cl.getGroup(msg.to).members
+                        for targ in gmem:
+                            if targ.displayName in namel:
+                                cl.sendText(msg.to,targ.displayName+": "+targ.mid)
                 elif msg.text.lower() == ".mentionall":
                     group = cl.getGroup(msg.to)
                     nama = [contact.mid for contact in group.members]
@@ -324,7 +355,7 @@ def user1script(op):
                     wait['alwayRead'] = False
                     cl.sendText(msg.to,"ปิดโหมดอ่านอัตโนมัติแล้ว")
                 elif msg.text.lower() == ".tyfelogin":
-                    if TyfeLogged == False:
+                    if not TyfeLogged:
                         kk.login(qr=True)
                         kk.loginResult()
                         user2 = kk.getProfile().mid
@@ -344,11 +375,43 @@ def user1script(op):
                     tlist = ""
                     for i in gs:
                         tlist = tlist+i.displayName+" "+i.mid+"\n\n"
-                    if TyfeLogged == True:
+                    if TyfeLogged:
                         try:
                             kk.sendText(user1,tlist)
                         except:
                             kk.new_post(tlist)
+                    else:
+                        cl.sendText(msg.to,"Tyfe ยังไม่ได้ล็อคอิน")
+                elif msg.text.lower() == ".tyfejoin":
+                    if TyfeLogged:
+                        x = cl.getGroup(msg.to)
+                        if user2 not in [i.mid for i in x.members]:
+                            defclose = False
+                            if x.preventJoinByTicket == False:
+                                ticket = cl.reissueGroupTicket(msg.to)
+                                kk.acceptGroupInvitationByTicket(msg.to,ticket)
+                                defclose = False
+                            else:
+                                sirilist = [i.mid for i in x.members if any(word in i.displayName for word in ["Doctor.A","Eliza","Parry","Rakko","しりちゃん"])]
+                                if sirilist == []:
+                                    x.preventJoinByTicket = False
+                                    cl.updateGroup(x)
+                                    ticket = cl.reissueGroupTicket(msg.to)
+                                    kk.acceptGroupInvitationByTicket(msg.to,ticket)
+                                    defclose = True
+                                else:
+                                    cl.inviteIntoGroup(msg.to,[user2])
+                                    kk.acceptGroupInvitation(msg.to)
+                            if defclose:
+                                x.preventJoinByTicket = True
+                                cl.updateGroup(x)
+                        else:
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"Tyfe อยู่ในกลุ่มอยู่แล้ว (｀・ω・´)"+tm)
                     else:
                         cl.sendText(msg.to,"Tyfe ยังไม่ได้ล็อคอิน")
                 elif msg.text.lower() == ".crash":
@@ -357,7 +420,7 @@ def user1script(op):
                     msg.contentMetadata = {'mid': msg.to+"',"}
                     cl.sendMessage(msg)
                 elif msg.text.lower() == ".help":
-                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- me\n- id\n- groupinfo\n- invitecancel\n- gift\n- mentionall\n- crash\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
+                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- me\n- uid\n- gid\n- groupinfo\n- invitecancel\n- gift\n- mentionall\n- crash\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
             except Exception as error:
                 print error
 
@@ -913,14 +976,10 @@ def user2script(op):
                         red = re.compile(re.escape('tyfe:ban '),re.IGNORECASE)
                         namel = red.sub('',msg.text)
                         namel = namel.lstrip()
-                        print namel
                         namel = namel.replace(" @","$spliter$")
-                        print namel
                         namel = namel.replace("@","")
-                        print namel
                         namel = namel.rstrip()
                         namel = namel.split("$spliter$")
-                        print namel
                         gmem = cl.getGroup(msg.to).members
                         found = False
                         tmpl = []
