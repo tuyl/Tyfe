@@ -540,9 +540,9 @@ tyfehelp = """คำสั่งควบคุม Tyfe ทั้งหมด:
 จัดการแอดมิน:
 Tyfe:admin [add/remove] (ADMIN)
 Tyfe:admin (ADMIN)
+Tyfe:superadmin (ADMIN)
 
 จัดการสมาชิก:
-Tyfe:superadmin (ADMIN)
 Tyfe:preventkick [on/off] (ADMIN)
 Tyfe:ban (ADMIN)
 Tyfe:unban (ADMIN)
