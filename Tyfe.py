@@ -1689,11 +1689,10 @@ def user2script(op):
                     else:
                         kk.sendText(msg.from_,"ไอดีของบัญชีนี้: "+user2)
             elif msg.text.lower() == "tyfe:creator":
-                if msg.from_ == user1:
-                    msg.contentType = 13
-                    msg.text = None
-                    msg.contentMetadata = {'mid': creator}
-                    kk.sendMessage(msg)
+                msg.contentType = 13
+                msg.text = None
+                msg.contentMetadata = {'mid': creator}
+                kk.sendMessage(msg)
             elif msg.text.lower() == "tyfe:help":
                 if msg.toType != 0:
                     kk.sendText(msg.to,tyfehelp)
