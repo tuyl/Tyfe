@@ -6,7 +6,8 @@ from multiprocessing import Pool
 import time,random,sys,json,codecs,threading,glob,re,datetime,urllib2,pickle,requests
 
 cl = LINETCR.LINE()
-cl.login(qr=True)
+#cl.login(qr=True)
+cl.login(qr=False,token="Em6qClERZPwQpUc959y8.uuhH2SY9xEyN2ZvKJeyrsa.RR0l9oh6M3v5GzA5C+JCj4WBPW/WDh7qOj/xBmWyQ18=")
 cl.loginResult()
 
 kk = LINETCR.LINE()
@@ -341,8 +342,9 @@ def user1script(op):
                     cl.sendText(msg.to,"ปิดโหมดอ่านอัตโนมัติแล้ว")
                 elif msg.text.lower() == ".tyfelogin":
                     if not TyfeLogged:
-                        lgncall = msg.to
-                        kk.login(qr=True,callback=logincall)
+                        #lgncall = msg.to
+                        #kk.login(qr=True,callback=logincall)
+                        kk.login(qr=False,token="EmteNCXn3yLZPmBD8N93.kDCeh69US7jK8pvVIzZciW.vW8nZj1YumXfsL1mI4+A7WcG37xFv/7+t9SuwY1Oo/M=")
                         kk.loginResult()
                         user2 = kk.getProfile().mid
                         TyfeLogged = True
@@ -486,7 +488,7 @@ def user1script(op):
                     wait["clock"] = False
                     cl.sendText(msg.to,"ปิดแล้ว")
                 elif msg.text.lower() == ".help":
-                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- myid\n- me\n- uid\n- gid\n- groupinfo\n- invitecancel\n- gift\n- save\n- copy\n- load\n- mentionall\n- crash\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
+                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- myid\n- me\n- uid\n- gid\n- groupinfo\n- invitecancel\n- gift\n- save\n- copy\n- load\n- mentionall\n- crash\n- livestatus [on/off]\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
             except Exception as error:
                 print error
 

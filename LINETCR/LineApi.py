@@ -65,6 +65,9 @@ class LINE:
   def updateSettings(self, settingObject):
     return self.Talk.client.updateSettings(0, settingObject)
 
+  def updateDisplayPicture(self, hash_id):
+    return self.Talk.client.updateProfileAttribute(0, 8, hash_id)
+
 
   """Operation"""
 
