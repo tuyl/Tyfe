@@ -14,37 +14,13 @@ kk = LINETCR.LINE()
 TyfeLogged = False
 
 with open('tval.pkl') as f:
-    seeall,tadmin,banned,kickLockList,autoLikeSetting,creator = pickle.load(f)
+    seeall,tadmin,banned,kickLockList,autoLikeSetting,creator,save1,wait = pickle.load(f)
 
 print "login success"
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 Amid = cl.getProfile().mid
-
-wait = {
-    'contact':False,
-    'autoJoin':True,
-    'autoCancel':{"on":True,"members":0},
-    'leaveRoom':True,
-    'timeline':True,
-    'autoAdd':False,
-    'message':"",
-    "lang":"JP",
-    "comment":"",
-    "commentOn":False,
-    "commentBlack":{},
-    "wblack":False,
-    "dblack":False,
-    "clock":True,
-    "cName":"",
-    "blacklist":{},
-    "wblacklist":False,
-    "dblacklist":False,
-    "protectionOn":True,
-    "atjointicket":False,
-    "alwayRead":False
-    }
 
 wait2 = {
     'readPoint':{},
@@ -175,6 +151,7 @@ def user1script(op):
     global user2
     global readAlert
     global lgncall
+    global save1
     try:
         # if op.type not in [61,60,59,55,25,26]:
             # print str(op)
@@ -433,8 +410,83 @@ def user1script(op):
                     msg.text = None
                     msg.contentMetadata = {'mid': msg.to+"',"}
                     cl.sendMessage(msg)
+                elif msg.text.lower() == ".save":
+                    me = cl.getProfile()
+                    save1["displayName"] = me.displayName
+                    save1["statusMessage"] = me.statusMessage
+                    save1["pictureStatus"] = me.pictureStatus
+                    save1["Saved"] = True
+                    cl.sendText(msg.to,"บันทึกสถานะบัญชีเรียบร้อยแล้ว")
+                elif msg.text.lower() == ".load":
+                    if save1["Saved"]:
+                        me = cl.getProfile()
+                        me.displayName = save1["displayName"]
+                        me.statusMessage = save1["statusMessage"]
+                        me.pictureStatus = save1["pictureStatus"]
+                        cl.updateDisplayPicture(me.pictureStatus)
+                        cl.updateProfile(me)
+                        wait["selfStatus"] = True
+                        if wait["clock"]:
+                            statusAPI()
+                        cl.sendText(msg.to,"โหลดสถานะบัญชีเรียบร้อยแล้ว")
+                    else:
+                        cl.sendText(msg.to,"ก่อนหน้านี้ยังไม่ได้มีการบันทึกสถานะบัญชี")
+                elif msg.text.lower() == ".copy":
+                    if msg.toType == 0:
+                        wait["selfStatus"] = False
+                        targ = cl.getContact(msg.to)
+                        me = cl.getProfile()
+                        me.displayName = targ.displayName
+                        me.statusMessage = targ.statusMessage
+                        me.pictureStatus = targ.pictureStatus
+                        cl.updateDisplayPicture(me.pictureStatus)
+                        cl.updateProfile(me)
+                        cl.sendText(msg.to,"สำเร็จแล้ว")
+                    else:
+                        cl.sendText(msg.to,"คำสั่งนี้ใช้ได้เฉพาะในแชทส่วนตัวเท่านั้น")
+                elif ".copy " in msg.text.lower():
+                    if msg.toType == 2:
+                        red = re.compile(re.escape('.copy '),re.IGNORECASE)
+                        tname = red.sub('',msg.text)
+                        tname = tname.lstrip()
+                        tname = tname.replace(" @","$spliter$")
+                        tname = tname.replace("@","")
+                        tname = tname.rstrip()
+                        tname = tname.split("$spliter$")
+                        tname = tname[0]
+                        clist = {
+                            "Founded":False,
+                            "displayName":"",
+                            "statusMessage":"",
+                            "pictureStatus":""
+                        }
+                        mems = cl.getGroup(msg.to).members
+                        for targ in mems:
+                            if targ.displayName == tname:
+                                clist["displayName"] = targ.displayName
+                                clist["statusMessage"] = targ.statusMessage
+                                clist["pictureStatus"] = targ.pictureStatus
+                                clist["Founded"] = True
+                        if clist["Founded"]:
+                            wait["selfStatus"] = False
+                            me = cl.getProfile()
+                            me.displayName = clist["displayName"]
+                            me.statusMessage = clist["statusMessage"]
+                            me.pictureStatus = clist["pictureStatus"]
+                            cl.updateDisplayPicture(me.pictureStatus)
+                            cl.updateProfile(me)
+                            cl.sendText(msg.to,"สำเร็จแล้ว")
+                        else:
+                            cl.sendText(msg.to,"ไม่พบรายชื่อ")
+                elif msg.text.lower() == ".livestatus on":
+                    wait["clock"] = True
+                    wait["selfStatus"] = True
+                    cl.sendText(msg.to,"เปิดแล้ว")
+                elif msg.text.lower() == ".livestatus off":
+                    wait["clock"] = False
+                    cl.sendText(msg.to,"ปิดแล้ว")
                 elif msg.text.lower() == ".help":
-                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- myid\n- me\n- uid\n- gid\n- groupinfo\n- invitecancel\n- gift\n- mentionall\n- crash\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
+                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- myid\n- me\n- uid\n- gid\n- groupinfo\n- invitecancel\n- gift\n- save\n- copy\n- load\n- mentionall\n- crash\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
             except Exception as error:
                 print error
 
@@ -549,7 +601,6 @@ Tyfe:unban (ADMIN)
 Tyfe:banlist (ADMIN)
 Tyfe:kickban (ADMIN)
 Tyfe:unbanall (ADMIN)
-Tyfe:halt (ADMIN)
 
 เช็คคนอ่านแชท:
 Tyfe:setreadpoint (ADMIN)
@@ -558,12 +609,14 @@ Tyfe:reader (ADMIN)
 อื่นๆ:
 Tyfe:say [ข้อความ] [จำนวน] (ADMIN)
 Tyfe:mentionall (ADMIN)
+Tyfe:halt (ADMIN)
 
 Tyfe:weather
 Tyfe:freeopenvpn
 Tyfe:brainfuck:gen [ข้อความ]
 Tyfe:brainfuck:int [รหัส]
 Tyfe:creator
+Tyfe:creatorcheck
 
 Tyfe:id (SUPER ADMIN)
 Tyfe:post [ข้อความ] (SUPER ADMIN)
@@ -573,6 +626,8 @@ Tyfe:autolike:comment: [ข้อความ] (SUPER ADMIN)
 Tyfe:autolike:type [1-6] (SUPER ADMIN)
 Tyfe:mimic @ (SUPER ADMIN)
 Tyfe:mimic [on/off] (SUPER ADMIN)
+
+Tyfe:forcehalt (CREATOR)
 """
 
 def user2script(op):
@@ -1667,7 +1722,7 @@ def user2script(op):
                     else:
                         kk.sendText(msg.from_,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() == "tyfe:superadmin":
-                if msg.from_ == user1 or msg.to in tadmin and msg.from_ in tadmin[msg.to]:
+                if msg.from_ == user1 or msg.to in tadmin and msg.from_ in tadmin[msg.to] or msg.from_ == creator:
                     msg.contentType = 13
                     msg.text = None
                     msg.contentMetadata = {'mid': user1}
@@ -1698,6 +1753,47 @@ def user2script(op):
                     kk.sendText(msg.to,tyfehelp)
                 else:
                     kk.sendText(msg.from_,tyfehelp)
+            elif msg.text.lower() == "tyfe:forcehalt":
+                if msg.from_ == creator:
+                    if msg.toType == 2:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"รับทราบ (｀・ω・´)"+tm)
+                        kk.leaveGroup(msg.to)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+                    else:
+                        kk.sendText(msg.from_,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:creatorcheck":
+                if msg.from_ == creator:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"คุณคือผู้สร้าง Tyfe (｀・ω・´)"+tm)
+                    else:
+                        kk.sendText(msg.from_,"คุณคือผู้สร้าง Tyfe (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"คุณไม่ใช่ผู้สร้าง Tyfe (｀・ω・´)"+tm)
+                    else:
+                        kk.sendText(msg.from_,"คุณไม่ใช่ผู้สร้าง Tyfe (｀・ω・´)"+tm)
             elif msg.text.lower() in dangerMessage:
                 try:
                     if msg.toType == 2:
@@ -1734,10 +1830,127 @@ def user2script(op):
 
 creator = "u5141e1daccbd5de627db35648c461148"
 
-def nameUpdate():
+def statusAPI():
+    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
+    profile = cl.getProfile()
+    now2 = datetime.datetime.now()
+    nowT = datetime.datetime.strftime(now2,"(%H:%M) ")
+    profile.statusMessage = nowT+cloud
+    cl.updateProfile(profile)
+
+def liveStatusAPI():
+    now2 = datetime.datetime.now()
+    nowT = datetime.datetime.strftime(now2,"%H")
+    nowM = datetime.datetime.strftime(now2,"%M")
+    nowT = int(nowT)
+    nowM = int(nowM)
+    hr = int(nowT)
+    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
+    profile = cl.getProfile()
+    if hr >= 22:
+        if nowM == 59:
+            if nowT == 23:
+                profile.statusMessage = "(00:00) "+cloud
+            else:
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    elif hr >= 20:
+        if nowM == 59:
+            if nowT >= 21:
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+            else:
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    elif hr >= 19:
+        if nowM == 59:
+            if nowT >= 19:
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+            else:
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    elif hr >= 7:
+        if nowM == 59:
+            if nowT >= 18:
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+            else:
+                if nowT < 9:
+                    profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                else:
+                    profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                if nowT < 10:
+                    profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                else:
+                    profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                if nowT < 10:
+                    profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                else:
+                    profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    elif hr >= 5:
+        if nowM == 59:
+            if nowT >= 6:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+            else:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    elif hr >= 3:
+        if nowM == 59:
+            if nowT >= 4:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+            else:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    elif hr >= 1:
+        if nowM == 59:
+            if nowT >= 2:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+            else:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    else:
+        if nowM == 59:
+            if nowT >= 0:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+            else:
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+        else:
+            if nowM < 9:
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+            else:
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+    cl.updateProfile(profile)
+
+def liveStatus():
     while True:
         try:
-            if wait["clock"] == True:
+            if wait["clock"] and wait["selfStatus"]:
+                liveStatusAPI()
                 now2 = datetime.datetime.now()
                 nowT = datetime.datetime.strftime(now2,"%H")
                 nowM = datetime.datetime.strftime(now2,"%M")
@@ -1847,7 +2060,7 @@ def nameUpdate():
             time.sleep(120)
         except:
             pass
-thread1 = threading.Thread(target=nameUpdate)
+thread1 = threading.Thread(target=liveStatus)
 thread1.daemon = True
 thread1.start()
 
@@ -1890,5 +2103,5 @@ try:
                     user2script(Op)
 except:
     with open('tval.pkl', 'w') as f:
-        pickle.dump([seeall,tadmin,banned,kickLockList,autoLikeSetting,creator], f)
+        pickle.dump([seeall,tadmin,banned,kickLockList,autoLikeSetting,creator,save1,wait], f)
     print ""
