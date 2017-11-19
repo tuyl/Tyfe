@@ -1828,8 +1828,6 @@ def user2script(op):
     except Exception as error:
         print error
 
-creator = "u5141e1daccbd5de627db35648c461148"
-
 def statusAPI():
     cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
     profile = cl.getProfile()
