@@ -1,2 +1,2 @@
 # Tyfe
-Yes. Tyfe Pro
+Yes. Tyfe
