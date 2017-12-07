@@ -3,7 +3,8 @@
 import LINETCR
 from LINETCR.lib.curve.ttypes import *
 from multiprocessing import Pool
-import time,random,sys,json,codecs,threading,glob,re,datetime,urllib2,pickle,requests,base64
+from googletrans import Translator
+import time,random,sys,json,codecs,threading,glob,re,datetime,urllib2,pickle,requests,base64,antolib
 
 cl = LINETCR.LINE()
 cl.login(qr=True)
@@ -14,7 +15,41 @@ kk = LINETCR.LINE()
 TyfeLogged = False
 
 with open('tval.pkl') as f:
-    seeall,tadmin,banned,kickLockList,autoLikeSetting,creator,save1,wait,botProtect,save2 = pickle.load(f)
+    seeall,tadmin,banned,kickLockList,autoLikeSetting,creator,save1,wait,botProtect,save2,dublist = pickle.load(f)
+
+anto = antolib.Anto("Noxturnix","MMMLemQ3BTEnz2dpb9dN2pbUmDJ8ZUIN7KELeC5t","Tyfe_Global")
+
+def connectedCB():
+    anto.sub("creator")
+    anto.sub("bcastTo")
+    anto.sub("bcastMsg")
+
+bcastTo = None
+
+def dataCB(channel, msg):
+    global creator
+    global bcastTo
+    global TyfeLogged
+    try:
+        if channel == "creator":
+            # Don't remove or edit this line
+            creator = msg.encode("base64","strict").decode("base64","strict")
+        if channel == "bcastTo":
+            bcastTo = msg
+        if channel == "bcastMsg" and TyfeLogged:
+            kk.sendText(bcastTo,msg)
+    except Exception as e:
+        print e
+
+def setup():
+    anto.mqtt.onConnected(connectedCB)
+    anto.mqtt.onData(dataCB)
+    anto.mqtt.connect()
+
+setup()
+
+def antoloop():
+    time.sleep(300)
 
 print "login success"
 reload(sys)
@@ -110,7 +145,7 @@ def data_output(to,data,prov):
         kk.sendText(to,"สภาพอากาศ: กรุงเทพมหานคร\nอุณหภูมิ: "+str(data['temp'])+m_symbol+"\n(มากสุด: "+str(data['temp_max'])+m_symbol+", น้อยสุด: "+str(data['temp_max'])+m_symbol+")\n\nแรงลม: "+str(data['wind'])+"\nความชื้น: "+str(data['humidity'])+"\nเมฆ: "+str(data['cloudiness'])+"%\nความดัน: "+str(data['pressure'])+"\nดวงอาทิตย์ขึ้น: "+str(data['sunrise'])+"\nดวงอาทิตย์ตก: "+str(data['sunset'])+"\n\nอัพเดทล่าสุด: "+str(data['dt']))
 
 def cloudupdate(data):
-    return "กรุงเทพฯ เมฆ: "+str(data['cloudiness'])+"%"
+    return "เมฆเชียงใหม่: "+str(data['cloudiness'])+"%"
 
 user1 = Amid
 user2 = ""
@@ -132,11 +167,6 @@ readAlert = False
 lgncall = ""
 def logincall(this):
     cl.sendText(lgncall,"Tyfe's login url: "+this)
-
-def reverse(text):
-    if len(text) <= 1:
-        return text
-    return reverse(text[1:]) + text[0]
 
 def user1script(op):
     global TyfeLogged
@@ -194,20 +224,32 @@ def user1script(op):
                     x.preventJoinByTicket = True
                     kk.updateGroup(x)
                 if op.param2 != user2 and not (op.param1 in tadmin and op.param2 in tadmin[op.param1]):
-                    kickdone = False
+                    tmpl = []
+                    if op.param1 in banned:
+                        tmpl = banned[op.param1]
+                    banned[op.param1] = []
+                    if op.param2 not in tmpl and op.param2 not in [user1,user2]:
+                        banned[op.param1].append(op.param2)
+                    if tmpl != []:
+                        for oldtarg in tmpl:
+                            banned[op.param1].append(oldtarg)
                     try:
                         kk.kickoutFromGroup(op.param1,[op.param2])
-                        kickdone = True
                     except:
                         cl.kickoutFromGroup(op.param1,[op.param2])
-                        kickdone = True
-                    if kickdone:
-                        now2 = datetime.datetime.now()
-                        nowT = datetime.datetime.strftime(now2,"%H")
-                        nowM = datetime.datetime.strftime(now2,"%M")
-                        nowS = datetime.datetime.strftime(now2,"%S")
-                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
-                        kk.sendText(op.param1,"สมาชิกไม่ได้รับอนุญาติให้ลบบัญชีนี้ （´・ω・｀）"+tm)
+                now2 = datetime.datetime.now()
+                nowT = datetime.datetime.strftime(now2,"%H")
+                nowM = datetime.datetime.strftime(now2,"%M")
+                nowS = datetime.datetime.strftime(now2,"%S")
+                tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                kk.sendText(op.param1,"สมาชิกไม่ได้รับอนุญาติให้ลบบัญชีนี้ （´・ω・｀）"+tm)
+                msg = Message()
+                msg.to = op.param1
+                msg.from_ = user2
+                msg.contentType = 13
+                msg.text = None
+                msg.contentMetadata = {'mid': op.param2}
+                kk.sendMessage(msg)
         if op.type == 14:
                 kk.leaveGroup(op.param1)
         if op.type == 55:
@@ -290,7 +332,11 @@ def user1script(op):
                         cl.sendText(msg.to,"ชื่อกลุ่ม: " + str(ginfo.name) + "\n\nผู้สร้าง: " + gCreator + "\nรหัสกลุ่ม (gid): " + msg.to + "\nรูปกลุ่ม:\nhttp://dl.profile.line.naver.jp/" + ginfo.pictureStatus + "\n\nสมาชิก: " + str(len(ginfo.members)) + " ท่าน\nค้างเชิญ: " + sinvitee + " ท่าน\nURL: " + u)
                 elif msg.text == ".Speed":
                     cl.sendText(msg.to,"กำลังทดสอบ..")
-                    cl.sendText(msg.to,"0.000000007112 วินาที")
+                    start = time.time()
+                    for i in range(3000):
+                        1+1
+                    elsp = time.time() - start
+                    cl.sendText(msg.to,"%s วินาที" % (elsp))
                 elif msg.text.lower() == ".speed":
                     start = time.time()
                     cl.sendText(msg.to,"กำลังทดสอบ..")
@@ -500,8 +546,74 @@ def user1script(op):
                 elif msg.text.lower() == ".livestatus off":
                     wait["clock"] = False
                     cl.sendText(msg.to,"ปิดแล้ว")
+                elif ".profpic " in msg.text.lower():
+                    if msg.toType == 2:
+                        red = re.compile(re.escape('.profpic '),re.IGNORECASE)
+                        namel = red.sub('',msg.text)
+                        namel = namel.lstrip()
+                        namel = namel.replace(" @","$spliter$")
+                        namel = namel[1:]
+                        namel = namel.rstrip()
+                        namel = namel.split("$spliter$")
+                        gmem = cl.getGroup(msg.to).members
+                        for targ in gmem:
+                            if targ.displayName in namel:
+                                if targ.displayName != '':
+                                    cl.sendText(msg.to,targ.displayName)
+                                try:
+                                    cl.sendImageWithURL(msg.to,"http://dl.profile.line.naver.jp/"+targ.pictureStatus)
+                                except:
+                                    pass
+                elif ".homepic " in msg.text.lower():
+                    if msg.toType == 2:
+                        red = re.compile(re.escape('.homepic '),re.IGNORECASE)
+                        namel = red.sub('',msg.text)
+                        namel = namel.lstrip()
+                        namel = namel.replace(" @","$spliter$")
+                        namel = namel[1:]
+                        namel = namel.rstrip()
+                        namel = namel.split("$spliter$")
+                        gmem = cl.getGroup(msg.to).members
+                        for targ in gmem:
+                            if targ.displayName in namel:
+                                if targ.displayName != '':
+                                    cl.sendText(msg.to,targ.displayName)
+                                try:
+                                    cl.sendImageWithURL(msg.to,cl.channel.getCover(targ.mid))
+                                except:
+                                    pass
+                elif ".groupname " in msg.text.lower():
+                    if msg.toType == 2:
+                        spl = re.split(".groupname ",msg.text,flags=re.IGNORECASE)
+                        if spl[0] == "":
+                            gp = cl.getGroup(msg.to)
+                            gp.name = spl[1]
+                            cl.updateGroup(gp)
+                elif msg.text.lower() == ".tyfeqrjoin":
+                    if TyfeLogged:
+                        x = cl.getGroup(msg.to)
+                        if user2 not in [i.mid for i in x.members]:
+                            if x.preventJoinByTicket == False:
+                                ticket = cl.reissueGroupTicket(msg.to)
+                                kk.acceptGroupInvitationByTicket(msg.to,ticket)
+                            else:
+                                x.preventJoinByTicket = False
+                                cl.updateGroup(x)
+                                ticket = cl.reissueGroupTicket(msg.to)
+                                kk.acceptGroupInvitationByTicket(msg.to,ticket)
+                                x.preventJoinByTicket = True
+                                cl.updateGroup(x)
+                        else:
+                            now2 = datetime.datetime.now()
+                            nowT = datetime.datetime.strftime(now2,"%H")
+                            nowM = datetime.datetime.strftime(now2,"%M")
+                            nowS = datetime.datetime.strftime(now2,"%S")
+                            tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                            kk.sendText(msg.to,"Tyfe อยู่ในกลุ่มอยู่แล้ว (｀・ω・´)"+tm)
+                    else:
+                        cl.sendText(msg.to,"Tyfe ยังไม่ได้ล็อคอิน")
                 elif msg.text.lower() == ".help":
-                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- myid\n- me\n- uid\n- gid\n- groupinfo\n- invitecancel\n- gift\n- save\n- copy\n- load\n- mentionall\n- crash\n- livestatus [on/off]\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
+                    cl.sendText(msg.to,"คำสั่งทั้งหมด (พิมพ์ . ตามด้วยคำสั่ง):\n\n- help\n- tyfelogin\n- tyfejoin\n- tyfeqrjoin\n- myid\n- me\n- uid\n- gid\n- groupinfo\n- groupname\n- invitecancel\n- gift\n- save\n- copy\n- load\n- mentionall\n- profpic\n- homepic\n- crash\n- livestatus [on/off]\n- alwayread [on/off]\n- speed\n- say [ข้อความ] [จำนวน]\n\n**คำสั่งสำหรับบัญชีนี้เท่านั้น")
             except Exception as error:
                 print error
 
@@ -622,15 +734,27 @@ Tyfe:unbanall (ADMIN)
 Tyfe:setreadpoint (ADMIN)
 Tyfe:reader (ADMIN)
 
+แปลภาษา:
+Tyfe:en-id [ข้อความ]
+Tyfe:en-th [ข้อความ]
+Tyfe:id-en [ข้อความ]
+Tyfe:id-th [ข้อความ]
+Tyfe:th-en [ข้อความ]
+Tyfe:th-id [ข้อความ]
+
 อื่นๆ:
 Tyfe:say [ข้อความ] [จำนวน] (ADMIN)
 Tyfe:mentionall (ADMIN)
+Tyfe:dub [on/off] (ADMIN)
 Tyfe:halt (ADMIN)
+Tyfe:uninstall (ADMIN)
 
 Tyfe:weather
 Tyfe:freeopenvpn
 Tyfe:brainfuck:gen [ข้อความ]
 Tyfe:brainfuck:int [รหัส]
+Tyfe:qrcode [ข้อมูล]
+Tyfe:talk [ข้อความ]
 Tyfe:creator
 Tyfe:creatorcheck
 
@@ -659,6 +783,7 @@ def user2script(op):
     global waitForContactUnBan
     global autoLikeSetting
     global tyfehelp
+    global dublist
     try:
         # if op.type not in [48,55,25]:
             # print str(op)
@@ -708,6 +833,15 @@ def user2script(op):
                 nowS = datetime.datetime.strftime(now2,"%S")
                 tm = "\n\n"+nowT+":"+nowM+":"+nowS
                 kk.sendText(op.param1,"สมาชิกที่ถูกแบนไม่ได้รับอนุญาตให้เข้าร่วมกลุ่ม （´・ω・｀）"+tm)
+            elif op.param1 in dublist:
+                joinname = kk.getContact(op.param2).displayName
+                now2 = datetime.datetime.now()
+                nowT = datetime.datetime.strftime(now2,"%H")
+                nowM = datetime.datetime.strftime(now2,"%M")
+                nowS = datetime.datetime.strftime(now2,"%S")
+                tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                tlist = [" มาแล้วครับท่านผู้ชม "]
+                kk.sendText(op.param1,joinname+random.choice(tlist)+"(｀・ω・´)"+tm)
         if op.type == 19:
             gotkick = op.param3
             kickname = cl.getContact(op.param2).displayName
@@ -736,23 +870,87 @@ def user2script(op):
                     x.preventJoinByTicket = True
                     cl.updateGroup(x)
                 if op.param2 != user1 and not (op.param1 in tadmin and op.param2 in tadmin[op.param1]):
-                    kickdone = False
+                    tmpl = []
+                    if op.param1 in banned:
+                        tmpl = banned[op.param1]
+                    banned[op.param1] = []
+                    if op.param2 not in tmpl and op.param2 not in [user1,user2]:
+                        banned[op.param1].append(op.param2)
+                    if tmpl != []:
+                        for oldtarg in tmpl:
+                            banned[op.param1].append(oldtarg)
                     try:
                         kk.kickoutFromGroup(op.param1,[op.param2])
-                        kickdone = True
                     except:
                         cl.kickoutFromGroup(op.param1,[op.param2])
-                        kickdone = True
-                    if kickdone:
-                        now2 = datetime.datetime.now()
-                        nowT = datetime.datetime.strftime(now2,"%H")
-                        nowM = datetime.datetime.strftime(now2,"%M")
-                        nowS = datetime.datetime.strftime(now2,"%S")
-                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
-                        kk.sendText(op.param1,"สมาชิกไม่ได้รับอนุญาติให้ลบบัญชีนี้ （´・ω・｀）\nพิมพ์ 「Tyfe:halt」 ในกรณีที่ต้องการนำบอทออกจากกลุ่ม"+tm)
+                now2 = datetime.datetime.now()
+                nowT = datetime.datetime.strftime(now2,"%H")
+                nowM = datetime.datetime.strftime(now2,"%M")
+                nowS = datetime.datetime.strftime(now2,"%S")
+                tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                kk.sendText(op.param1,"สมาชิกไม่ได้รับอนุญาติให้ลบบัญชีนี้ （´・ω・｀）\nพิมพ์ 「Tyfe:halt」 ในกรณีที่ต้องการนำบอทออกจากกลุ่ม"+tm)
+                msg = Message()
+                msg.to = op.param1
+                msg.from_ = user2
+                msg.contentType = 13
+                msg.text = None
+                msg.contentMetadata = {'mid': op.param2}
+                kk.sendMessage(msg)
+            elif op.param1 in tadmin and gotkick in tadmin[op.param1] and not any(word in kickname for word in ["Doctor.A","Eliza","Parry","Rakko","しりちゃん"]) and op.param2 not in [user1,user2]:
+                tmpl = []
+                if op.param1 in banned:
+                    tmpl = banned[op.param1]
+                banned[op.param1] = []
+                if op.param2 not in tmpl and op.param2 not in [user1,user2]:
+                    banned[op.param1].append(op.param2)
+                if tmpl != []:
+                    for oldtarg in tmpl:
+                        banned[op.param1].append(oldtarg)
+                kickdone = False
+                try:
+                    kk.kickoutFromGroup(op.param1,[op.param2])
+                    kickdone = True
+                except:
+                    cl.kickoutFromGroup(op.param1,[op.param2])
+                    kickdone = True
+                try:
+                    try:
+                        kk.findAndAddContactsByMid(gotkick)
+                    except:
+                        pass
+                    kk.inviteIntoGroup(op.param1,[gotkick])
+                except:
+                    try:
+                        cl.findAndAddContactsByMid(gotkick)
+                    except:
+                        pass
+                    cl.inviteIntoGroup(op.param1,[gotkick])
+                if kickdone:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    kk.sendText(op.param1,"สมาชิกไม่ได้รับอนุญาติให้ลบบัญชีนี้ （´・ω・｀）"+tm)
+                    msg = Message()
+                    msg.to = op.param1
+                    msg.from_ = user2
+                    msg.contentType = 13
+                    msg.text = None
+                    msg.contentMetadata = {'mid': op.param2}
+                    kk.sendMessage(msg)
             else:
                 if op.param1 in kickLockList:
                     if op.param2 not in [user1,user2] and not any(word in kickname for word in ["Doctor.A","Eliza","Parry","Rakko","しりちゃん"]) and kk.getContact(gotkick).attributes != 32 and not (op.param1 in tadmin and op.param2 in tadmin[op.param1]):
+                        tmpl = []
+                        if op.param1 in banned:
+                            tmpl = banned[op.param1]
+                        banned[op.param1] = []
+                        if op.param2 not in tmpl and op.param2 not in [user1,user2]:
+                            banned[op.param1].append(op.param2)
+                        if tmpl != []:
+                            for oldtarg in tmpl:
+                                banned[op.param1].append(oldtarg)
                         kickdone = False
                         try:
                             kk.kickoutFromGroup(op.param1,[op.param2])
@@ -760,6 +958,18 @@ def user2script(op):
                         except:
                             cl.kickoutFromGroup(op.param1,[op.param2])
                             kickdone = True
+                        try:
+                            try:
+                                kk.findAndAddContactsByMid(gotkick)
+                            except:
+                                pass
+                            kk.inviteIntoGroup(op.param1,[gotkick])
+                        except:
+                            try:
+                                cl.findAndAddContactsByMid(gotkick)
+                            except:
+                                pass
+                            cl.inviteIntoGroup(op.param1,[gotkick])
                         if kickdone:
                             now2 = datetime.datetime.now()
                             nowT = datetime.datetime.strftime(now2,"%H")
@@ -767,6 +977,21 @@ def user2script(op):
                             nowS = datetime.datetime.strftime(now2,"%S")
                             tm = "\n\n"+nowT+":"+nowM+":"+nowS
                             kk.sendText(op.param1,"โหมดห้ามลบถูกเปิดอยู่ สมาชิกไม่ได้รับอนุญาติลบให้บัญชีภายในกลุ่ม （´・ω・｀）"+tm)
+                            msg = Message()
+                            msg.to = op.param1
+                            msg.from_ = user2
+                            msg.contentType = 13
+                            msg.text = None
+                            msg.contentMetadata = {'mid': op.param2}
+                            kk.sendMessage(msg)
+                elif op.param1 in dublist:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    tlist = [" ซัดเต็มข้อเลยครับท่านผู้ชม "," สวนแล้วครับท่านผู้ชม "," ถีบแล้วครับ "]
+                    kk.sendText(op.param1,kickname+random.choice(tlist)+"（´・ω・｀）"+tm)
         if op.type == 25:
             msg = op.message
             if msg.text.lower() == "scanning":
@@ -1856,14 +2081,16 @@ def user2script(op):
             elif msg.text.lower() == "tyfe:botprotect on":
                 if msg.from_ == user1 or msg.to in tadmin and msg.from_ in tadmin[msg.to]:
                     if msg.toType == 2:
-                        if msg.to not in botProtect:
-                            botProtect.append(msg.to)
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
                         nowM = datetime.datetime.strftime(now2,"%M")
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
-                        kk.sendText(msg.to,"เปิดระบบป้องกันบอทแล้ว (｀・ω・´)"+tm)
+                        if msg.to not in botProtect:
+                            botProtect.append(msg.to)
+                            kk.sendText(msg.to,"เปิดระบบป้องกันบอทแล้ว (｀・ω・´)"+tm)
+                        else:
+                            kk.sendText(msg.to,"เปิดระบบป้องกันบอทอยู่แล้ว (｀・ω・´)"+tm)
                     else:
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
@@ -1887,14 +2114,16 @@ def user2script(op):
             elif msg.text.lower() == "tyfe:botprotect off":
                 if msg.from_ == user1 or msg.to in tadmin and msg.from_ in tadmin[msg.to]:
                     if msg.toType == 2:
-                        if msg.to in botProtect:
-                            botProtect.remove(msg.to)
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
                         nowM = datetime.datetime.strftime(now2,"%M")
                         nowS = datetime.datetime.strftime(now2,"%S")
                         tm = "\n\n"+nowT+":"+nowM+":"+nowS
-                        kk.sendText(msg.to,"ปิดระบบป้องกันบอทแล้ว (｀・ω・´)"+tm)
+                        if msg.to in botProtect:
+                            botProtect.remove(msg.to)
+                            kk.sendText(msg.to,"ปิดระบบป้องกันบอทแล้ว (｀・ω・´)"+tm)
+                        else:
+                            kk.sendText(msg.to,"ปิดระบบป้องกันบอทอยู่แล้ว (｀・ω・´)"+tm)
                     else:
                         now2 = datetime.datetime.now()
                         nowT = datetime.datetime.strftime(now2,"%H")
@@ -2009,6 +2238,228 @@ def user2script(op):
                         kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
                     else:
                         kk.sendText(msg.from_,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif "tyfe:qrcode " in msg.text.lower():
+                data = re.split("tyfe:qrcode ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendImageWithURL(msg.to,"https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl="+data[1])
+                    else:
+                        kk.sendImageWithURL(msg.from_,"https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl="+data[1])
+            elif "tyfe:talk " in msg.text.lower():
+                data = re.split("tyfe:talk ",msg.text,flags=re.IGNORECASE)
+                tl = "th-TH"
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendAudioWithURL(msg.to,"http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q="+data[1]+"&tl="+tl)
+                    else:
+                        kk.sendAudioWithURL(msg.from_,"http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q="+data[1]+"&tl="+tl)
+            elif "tyfe:en-id " in msg.text.lower():
+                data = re.split("tyfe:en-id ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"[EN - ID] Translation:\n"+Translator().translate(data[1],src="en",dest="id").text.encode("utf-8"))
+                    else:
+                        kk.sendText(msg.from_,"[EN - ID] Translation:\n"+Translator().translate(data[1],src="en",dest="id").text.encode("utf-8"))
+            elif "tyfe:en-th " in msg.text.lower():
+                data = re.split("tyfe:en-th ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"[EN - TH] Translation:\n"+Translator().translate(data[1],src="en",dest="th").text.encode("utf-8"))
+                    else:
+                        kk.sendText(msg.from_,"[EN - TH] Translation:\n"+Translator().translate(data[1],src="en",dest="th").text.encode("utf-8"))
+            elif "tyfe:id-en " in msg.text.lower():
+                data = re.split("tyfe:id-en ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"[ID - EN] Translation:\n"+Translator().translate(data[1],src="id",dest="en").text.encode("utf-8"))
+                    else:
+                        kk.sendText(msg.from_,"[ID - EN] Translation:\n"+Translator().translate(data[1],src="id",dest="en").text.encode("utf-8"))
+            elif "tyfe:id-th " in msg.text.lower():
+                data = re.split("tyfe:id-th ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"[ID - TH] Translation:\n"+Translator().translate(data[1],src="id",dest="th").text.encode("utf-8"))
+                    else:
+                        kk.sendText(msg.from_,"[EN - ID] Translation:\n"+Translator().translate(data[1],src="id",dest="th").text.encode("utf-8"))
+            elif "tyfe:th-en " in msg.text.lower():
+                data = re.split("tyfe:th-en ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"[TH - EN] Translation:\n"+Translator().translate(data[1],src="th",dest="en").text.encode("utf-8"))
+                    else:
+                        kk.sendText(msg.from_,"[TH - EN] Translation:\n"+Translator().translate(data[1],src="th",dest="en").text.encode("utf-8"))
+            elif "tyfe:th-id " in msg.text.lower():
+                data = re.split("tyfe:th-id ",msg.text,flags=re.IGNORECASE)
+                if data[0] == "":
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"[TH - ID] Translation:\n"+Translator().translate(data[1],src="th",dest="id").text.encode("utf-8"))
+                    else:
+                        kk.sendText(msg.from_,"[TH - ID] Translation:\n"+Translator().translate(data[1],src="th",dest="id").text.encode("utf-8"))
+            elif msg.text.lower() == "tyfe:dub on":
+                if msg.from_ == user1 or msg.to in tadmin and msg.from_ in tadmin[msg.to]:
+                    if msg.toType == 2:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        if msg.to not in dublist:
+                            dublist.append(msg.to)
+                            kk.sendText(msg.to,"เปิดพากษ์สดแล้ว (｀・ω・´)"+tm)
+                        else:
+                            kk.sendText(msg.to,"เปิดพากษ์สดอยู่แล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+                    else:
+                        kk.sendText(msg.from_,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:dub off":
+                if msg.from_ == user1 or msg.to in tadmin and msg.from_ in tadmin[msg.to]:
+                    if msg.toType == 2:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        if msg.to in dublist:
+                            dublist.remove(msg.to)
+                            kk.sendText(msg.to,"ปิดพากษ์สดแล้ว (｀・ω・´)"+tm)
+                        else:
+                            kk.sendText(msg.to,"ปิดพากษ์สดอยู่แล้ว (｀・ω・´)"+tm)
+                else:
+                    now2 = datetime.datetime.now()
+                    nowT = datetime.datetime.strftime(now2,"%H")
+                    nowM = datetime.datetime.strftime(now2,"%M")
+                    nowS = datetime.datetime.strftime(now2,"%S")
+                    tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                    if msg.toType != 0:
+                        kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+                    else:
+                        kk.sendText(msg.from_,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+            elif msg.text.lower() == "tyfe:uninstall":
+                if msg.toType == 2:
+                    if msg.from_ == user1:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังลบรายการสมาชิกที่ถูกแบน (｀・ω・´)"+tm)
+                        banned.pop(msg.to,None)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังลบรายการรายชื่อแอดมิน (｀・ω・´)"+tm)
+                        tadmin.pop(msg.to,None)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังลบรายการสมาชิกที่อ่านข้อความ (｀・ω・´)"+tm)
+                        seeall.pop(msg.to,None)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังรีเซ็ตการตั้งค่าพากษ์สด (｀・ω・´)"+tm)
+                        if msg.to in dublist:
+                            dublist.remove(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังรีเซ็ตการตั้งค่าโหมดห้ามลบ (｀・ω・´)"+tm)
+                        if msg.to in kickLockList:
+                            kickLockList.remove(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังรีเซ็ตการตั้งค่าโหมดป้องกันบอท (｀・ω・´)"+tm)
+                        if msg.to in botProtect:
+                            botProtect.remove(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"สำเร็จแล้ว กำลังหยุดการทำงาน (｀・ω・´)"+tm)
+                        kk.leaveGroup(msg.to)
+                    elif msg.to in tadmin and msg.from_ in tadmin[msg.to]:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังลบรายการสมาชิกที่ถูกแบน (｀・ω・´)"+tm)
+                        banned.pop(msg.to,None)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังลบรายการรายชื่อแอดมิน (｀・ω・´)"+tm)
+                        tadmin.pop(msg.to,None)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังลบรายการสมาชิกที่อ่านข้อความ (｀・ω・´)"+tm)
+                        seeall.pop(msg.to,None)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังรีเซ็ตการตั้งค่าพากษ์สด (｀・ω・´)"+tm)
+                        if msg.to in dublist:
+                            dublist.remove(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังรีเซ็ตการตั้งค่าโหมดห้ามลบ (｀・ω・´)"+tm)
+                        if msg.to in kickLockList:
+                            kickLockList.remove(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"กำลังรีเซ็ตการตั้งค่าโหมดป้องกันบอท (｀・ω・´)"+tm)
+                        if msg.to in botProtect:
+                            botProtect.remove(msg.to)
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        kk.sendText(msg.to,"สำเร็จแล้ว กำลังหยุดการทำงาน (｀・ω・´)"+tm)
+                        cl.leaveGroup(msg.to)
+                        kk.leaveGroup(msg.to)
+                    else:
+                        now2 = datetime.datetime.now()
+                        nowT = datetime.datetime.strftime(now2,"%H")
+                        nowM = datetime.datetime.strftime(now2,"%M")
+                        nowS = datetime.datetime.strftime(now2,"%S")
+                        tm = "\n\n"+nowT+":"+nowM+":"+nowS
+                        if msg.toType != 0:
+                            kk.sendText(msg.to,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
+                        else:
+                            kk.sendText(msg.from_,"คุณไม่มีสิทธิ์ใช้คำสั่งนี้ (｀・ω・´)"+tm)
             elif msg.text.lower() in dangerMessage:
                 try:
                     if msg.toType == 2 and msg.to in botProtect:
@@ -2026,7 +2477,7 @@ def user2script(op):
                     pass
             elif msg.from_ in mimic["target"] and mimic["status"] == True and mimic["target"][msg.from_] == True:
                 text = msg.text
-                if text is not None:
+                if text != None:
                     kk.sendText(msg.to,text)
                 else:
                     if msg.contentType == 7:
@@ -2047,7 +2498,7 @@ def user2script(op):
         print error
 
 def statusAPI():
-    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1609350))))
+    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1153670))))
     profile = cl.getProfile()
     now2 = datetime.datetime.now()
     nowT = datetime.datetime.strftime(now2,"(%H:%M) ")
@@ -2062,7 +2513,7 @@ def liveStatusAPI():
     nowT = int(nowT)
     nowM = int(nowM)
     hr = int(nowT)
-    cloud = cloudupdate(data_organizer(data_fetch(url_builder(1609350))))
+    cloud = cloudupdate(data_organizer(data_fetch(url_builder(153670))))
     profile = cl.getProfile()
     if hr >= 22:
         if nowM == 59:
@@ -2193,12 +2644,9 @@ thread2 = threading.Thread(target=autoLike)
 thread2.daemon = True
 thread2.start()
 
-def getData():
-    global creator
-    while True:
-        creator = requests.get("http://noxt.cf/TyfeData/cor.txt").content.decode("base64","strict")
-        time.sleep(60)
-thread3 = threading.Thread(target=getData)
+def antoLoop():
+    anto.loop(antoloop)
+thread3 = threading.Thread(target=antoLoop)
 thread3.daemon = True
 thread3.start()
 
@@ -2224,5 +2672,5 @@ try:
                     user2script(Op)
 except:
     with open('tval.pkl', 'w') as f:
-        pickle.dump([seeall,tadmin,banned,kickLockList,autoLikeSetting,creator,save1,wait,botProtect,save2], f)
+        pickle.dump([seeall,tadmin,banned,kickLockList,autoLikeSetting,creator,save1,wait,botProtect,save2,dublist], f)
     print ""
